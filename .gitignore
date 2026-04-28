@@ -10,5 +10,3 @@
 *.log
 /temp_doc_work/
 /Docs/IntegrationTest.ps1
-appsettings.json
-appsettings.Development.json
