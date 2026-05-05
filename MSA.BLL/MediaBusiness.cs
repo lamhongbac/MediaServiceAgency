@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using MSA.BLL.DTOs;
 using MSA.DAL.Models.MSA.DAL.Models;
 using MSA.DAL.Repos;
-using System.Linq;
 
 namespace MSA.BLL
 {
@@ -15,7 +14,7 @@ namespace MSA.BLL
     /// </summary>
     public class MediaBusiness : IMediaBusiness
     {
-        
+
         private readonly IAppRepository _appRepository;
         private readonly string _storageRoot;
         private readonly string _baseDomain;
@@ -104,52 +103,49 @@ namespace MSA.BLL
         /// <returns>True nếu có ít nhất một file bị xóa thành công.</returns>
         public async Task<bool> DeleteMediaAsync(DeleteMediaRequest request)
         {
-            return await Task.Run(() =>
+            try
             {
-                try
+                // 1. Chuẩn hóa metadata (BLL nắm giữ qui tắc này)
+                string appCode = request.AppCode.ToLower();
+                string mediaType = request.MediaType.ToLower();
+                string entity = request.Entity.ToLower();
+                string uniqueCode = request.UniqueCode.ToLower();
+
+                // 2. Xác định thư mục chứa file
+                string relativeFolder = Path.Combine(appCode, mediaType, entity, uniqueCode);
+                string physicalFolder = Path.Combine(_storageRoot, relativeFolder);
+
+                if (!Directory.Exists(physicalFolder)) return false;
+
+                // 3. Tìm file bắt đầu bằng UniqueCode (vì tên file là UniqueCode_Timestamp.ext)
+                // Cách này giúp Client không cần biết phần Timestamp đằng sau
+                var directoryInfo = new DirectoryInfo(physicalFolder);
+                var files = directoryInfo.GetFiles($"{uniqueCode}_*.*");
+
+                if (files != null && files.Any())
                 {
-                    // 1. Chuẩn hóa metadata (BLL nắm giữ qui tắc này)
-                    string appCode = request.AppCode.ToLower();
-                    string mediaType = request.MediaType.ToLower();
-                    string entity = request.Entity.ToLower();
-                    string uniqueCode = request.UniqueCode.ToLower();
-
-                    // 2. Xác định thư mục chứa file
-                    string relativeFolder = Path.Combine(appCode, mediaType, entity, uniqueCode);
-                    string physicalFolder = Path.Combine(_storageRoot, relativeFolder);
-
-                    if (!Directory.Exists(physicalFolder)) return false;
-
-                    // 3. Tìm file bắt đầu bằng UniqueCode (vì tên file là UniqueCode_Timestamp.ext)
-                    // Cách này giúp Client không cần biết phần Timestamp đằng sau
-                    var directoryInfo = new DirectoryInfo(physicalFolder);
-                    var files = directoryInfo.GetFiles($"{uniqueCode}_*.*");
-
-                    if (files != null && files.Any())
+                    foreach (var file in files)
                     {
-                        foreach (var file in files)
-                        {
-                            file.Delete();
-                        }
-                        // QUAN TRỌNG: Làm mới bộ nhớ đệm của directoryInfo sau khi xóa file
-                        directoryInfo.Refresh();
-
-                        // 4. Dọn dẹp thư mục nếu trống
-                        if (Directory.Exists(physicalFolder) && !Directory.EnumerateFileSystemEntries(physicalFolder).Any())
-                        {
-                            Directory.Delete(physicalFolder);
-                        }
-                        return true;
+                        file.Delete();
                     }
+                    // QUAN TRỌNG: Làm mới bộ nhớ đệm của directoryInfo sau khi xóa file
+                    directoryInfo.Refresh();
 
-                    return false;
+                    // 4. Dọn dẹp thư mục nếu trống
+                    if (Directory.Exists(physicalFolder) && !Directory.EnumerateFileSystemEntries(physicalFolder).Any())
+                    {
+                        Directory.Delete(physicalFolder);
+                    }
+                    return true;
                 }
-                catch (Exception)
-                {
-                    // Log error
-                    return false;
-                }
-            });
+
+                return false;
+            }
+            catch (Exception)
+            {
+                // Log error
+                return false;
+            }
         }
 
         /// <summary>

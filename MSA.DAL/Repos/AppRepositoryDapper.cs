@@ -1,16 +1,11 @@
-using MSA.DAL.Models.MSA.DAL.Models;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Dapper;
+using MSA.DAL.Models.MSA.DAL.Models;
+using System.Data;
 
 namespace MSA.DAL.Repos
 {
     /// <summary>
-    /// Triển khai các thao tác truy cập dữ liệu cho bảng AppPartners sử dụng Dapper.
+    /// Triển khai các thao tác truy cập dữ liệu cho bảng AppPartner sử dụng Dapper.
     /// </summary>
     public class AppRepositoryDapper : IAppRepository
     {
@@ -32,7 +27,7 @@ namespace MSA.DAL.Repos
         /// <returns>Đối tượng AppPartner nếu tìm thấy.</returns>
         public async Task<AppPartner> GetByAppCodeAsync(string appCode)
         {
-            string sql = "SELECT * FROM AppPartners WHERE AppCode = @AppCode AND IsActive = 1";
+            string sql = "SELECT * FROM AppPartner WHERE AppCode = @AppCode AND IsActive = 1";
             return await _dbConnection.QueryFirstOrDefaultAsync<AppPartner>(sql, new { AppCode = appCode });
         }
 
@@ -43,20 +38,20 @@ namespace MSA.DAL.Repos
         /// <returns>True nếu đã tồn tại ít nhất 1 bản ghi.</returns>
         public async Task<bool> IsAppCodeExistAsync(string appCode)
         {
-            string sql = "SELECT COUNT(1) FROM AppPartners WHERE AppCode = @AppCode";
+            string sql = "SELECT COUNT(1) FROM AppPartner WHERE AppCode = @AppCode";
             var count = await _dbConnection.ExecuteScalarAsync<int>(sql, new { AppCode = appCode });
             return count > 0;
         }
-        
+
         /// <summary>
-        /// Thêm mới thông tin đăng ký ứng dụng vào bảng AppPartners.
+        /// Thêm mới thông tin đăng ký ứng dụng vào bảng AppPartner.
         /// </summary>
         /// <param name="model">Dữ liệu model AppPartner.</param>
         /// <returns>True nếu chèn thành công bản ghi.</returns>
         public async Task<bool> InsertAppAsync(AppPartner model)
-        {            
+        {
 
-            string sql = @"INSERT INTO AppPartners (AppCode, ApiKey, AppName, IsActive, CreatedDate) 
+            string sql = @"INSERT INTO AppPartner (AppCode, ApiKey, AppName, IsActive, CreatedDate) 
                    VALUES (@AppCode, @ApiKey, @AppName, @IsActive, @CreatedDate)";
 
             try
@@ -82,11 +77,11 @@ namespace MSA.DAL.Repos
         /// <returns>True nếu có bản ghi bị ảnh hưởng.</returns>
         public async Task<bool> UpdateStatusAsync(string appCode, bool isActive)
         {
-            string sql = "UPDATE AppPartners SET IsActive = @IsActive WHERE AppCode = @AppCode";
+            string sql = "UPDATE AppPartner SET IsActive = @IsActive WHERE AppCode = @AppCode";
             int rows = await _dbConnection.ExecuteAsync(sql, new { IsActive = isActive, AppCode = appCode });
             return rows > 0;
         }
 
-        
+
     }
 }
